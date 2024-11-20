@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/appwrite";
 import { appwriteConfig } from "../appwrite/config";
 import { ID, Query } from "node-appwrite";
 import { parseStringify } from "../utils";
+import { cookies } from "next/headers";
 
 const getUserByEmail = async (email: string) => {
   const { databases } = await createAdminClient();
@@ -59,9 +60,34 @@ export const createAccount = async ({
         email,
         avatar:
           "https://img.freepik.com/premium-vector/man-empty-avatar-casual-business-style-vector-photo-placeholder-social-networks-resumes_885953-434.jpg",
-        accountId,
+        accountid: accountId,
       }
     );
   }
   return parseStringify({ accountId });
+};
+
+export const verifySecret = async ({
+  accountId,
+  password,
+}: {
+  accountId: string;
+  password: string;
+}) => {
+  try {
+    const { account } = await createAdminClient();
+
+    const session = await account.createSession(accountId, password);
+
+    (await cookies()).set("appwrite-session", session.secret, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "strict",
+      secure: true,
+    });
+
+    return parseStringify({ sessionId: session.$id });
+  } catch (error) {
+    handleError(error, "Failed to verify OTP");
+  }
 };

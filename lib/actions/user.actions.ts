@@ -61,7 +61,7 @@ export const createAccount = async ({
         fullName,
         email,
         avatar: avatarPlaceholderUrl,
-        accountid: accountId,
+        accountId: accountId,
       }
     );
   }
@@ -101,7 +101,7 @@ export const getCurrentUser = async () => {
   const user = await databases.listDocuments(
     appwriteConfig.databaseId,
     appwriteConfig.usersCollectionId,
-    [Query.equal("accountid", result.$id)]
+    [Query.equal("accountId", result.$id)]
   );
 
   if (user.total <= 0) return null;
@@ -128,7 +128,7 @@ export const signInUser = async ({ email }: { email: string }) => {
     //is users exists then send OTP
     if (existingUser) {
       await sendEmailOTP({ email });
-      return parseStringify({ accountId: existingUser.accountid });
+      return parseStringify({ accountId: existingUser.accountId });
     }
 
     return parseStringify({ accountId: null, error: "User not found" });

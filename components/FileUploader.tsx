@@ -11,39 +11,56 @@ import { MAX_FILE_SIZE } from "@/constants";
 import { useToast } from "@/hooks/use-toast";
 // import { uploadFile } from "@/lib/actions/file.actions";
 import { usePathname } from "next/navigation";
+import { uploadFile } from "@/lib/actions/file.action";
 
 interface Props {
   ownerId: string;
   accountId: string;
-  className: string;
+  className?: string;
 }
 
 const FileUploader = ({ ownerId, accountId, className }: Props) => {
   const { toast } = useToast();
+  const path = usePathname();
   const [files, setFiles] = useState<File[]>([]);
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    setFiles(acceptedFiles);
+  const onDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      setFiles(acceptedFiles);
 
-    const uploadPromises = acceptedFiles.map(async (file) => {
-      if (file.size > MAX_FILE_SIZE) {
-        setFiles((prevFiles) => prevFiles.filter((f) => f.name !== file.name));
+      const uploadPromises = acceptedFiles.map(async (file) => {
+        if (file.size > MAX_FILE_SIZE) {
+          setFiles((prevFiles) =>
+            prevFiles.filter((f) => f.name !== file.name)
+          );
 
-        return toast({
-          description: (
-            <p className="body-2 text-white">
-              <span className="font-semibold">{file.name}</span> is too large.
-              Max file size is 50MB.
-            </p>
-          ),
-          className: "error-toast",
-        });
-      }
-    });
-  }, []);
-  //! 2:59:00
+          return toast({
+            description: (
+              <p className="body-2 text-white">
+                <span className="font-semibold">{file.name}</span> is too large.
+                Max file size is 50MB.
+              </p>
+            ),
+            className: "error-toast",
+          });
+        }
+        return uploadFile({ file, ownerId, accountId, path }).then(
+          (uploadedFile) => {
+            if (uploadedFile) {
+              setFiles((prevFiles) =>
+                prevFiles.filter((f) => f.name !== file.name)
+              );
+            }
+          }
+        );
+      });
+      await Promise.all(uploadPromises);
+    },
+    [ownerId, accountId, path]
+    //! This dependency tells us that we don't have to run this piece of code every time but only when the things in the dependency changes.
+  );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+  const { getRootProps, getInputProps } = useDropzone({ onDrop });
 
   const handleRemoveFile = (
     e: React.MouseEvent<HTMLImageElement, MouseEvent>,
